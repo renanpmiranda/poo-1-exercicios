@@ -1,6 +1,6 @@
+import { VideoDatabase } from './database/VideoDatabase';
 import express, { Request, Response} from 'express';
 import cors from 'cors';
-import { db } from './database/knex';
 import { Video } from './models/Video';
 
 const app = express();
@@ -18,11 +18,9 @@ app.get("/ping", (req: Request, res: Response) => {
 
 app.get("/videos", async (req: Request, res: Response) => {
     try {
-        let videosDB
-
-        const result = await db("videos")
-
-        videosDB = result
+        
+        const videoDatabase = new VideoDatabase()
+        const videosDB = await videoDatabase.findVideos()
 
         const videos: Video[] = videosDB.map((videoDB) => new Video(
             videoDB.id,
@@ -67,7 +65,9 @@ app.post("/videos", async (req: Request, res: Response) => {
             throw new Error("'duration' deve ser number")
         }
         
-        const [ videoDBExists ] = await db("videos").where({ id })
+        // const [ videoDBExists ] = await db("videos").where({ id })
+        const videoDatabase = new VideoDatabase()
+        const videoDBExists = await videoDatabase.findVideoById(id)
 
         if (videoDBExists) {
             res.status(400)
@@ -88,7 +88,8 @@ app.post("/videos", async (req: Request, res: Response) => {
             upload_date: newVideo.getUploadDate()
         }
 
-        await db("videos").insert(newVideoDB)
+        // await db("videos").insert(newVideoDB)
+        const newVideoDatabase = videoDatabase.insertVideo(newVideoDB)
 
         res.status(201).send(newVideo)
 
@@ -107,90 +108,90 @@ app.post("/videos", async (req: Request, res: Response) => {
     }
 })
 
-app.put("/videos/:id", async (req: Request, res: Response) => {
-    try {
-        const videoId = req.params.id
+// app.put("/videos/:id", async (req: Request, res: Response) => {
+//     try {
+//         const videoId = req.params.id
 
-        const [ videoDBExists ] = await db("videos").where({ id: videoId })
+//         const [ videoDBExists ] = await db("videos").where({ id: videoId })
 
-        if (!videoDBExists) {
-            res.status(400)
-            throw new Error("'id' não encontrada")
-        }
+//         if (!videoDBExists) {
+//             res.status(400)
+//             throw new Error("'id' não encontrada")
+//         }
 
-        const { title, duration } = req.body
+//         const { title, duration } = req.body
 
-        if(title !== undefined){
-            if (typeof title !== "string") {
-                res.status(400)
-                throw new Error("'title' deve ser string")
-            }
-        }        
+//         if(title !== undefined){
+//             if (typeof title !== "string") {
+//                 res.status(400)
+//                 throw new Error("'title' deve ser string")
+//             }
+//         }        
 
-        if(duration !== undefined){
-            if (typeof duration !== "number") {
-                res.status(400)
-                throw new Error("'duration' deve ser number")
-            }  
-        }          
+//         if(duration !== undefined){
+//             if (typeof duration !== "number") {
+//                 res.status(400)
+//                 throw new Error("'duration' deve ser number")
+//             }  
+//         }          
         
-        const editedVideo = new Video(
-            videoId,
-            title || videoDBExists.title,
-            duration || videoDBExists.duration,
-            new Date(Date.now()).toUTCString()
-        )
+//         const editedVideo = new Video(
+//             videoId,
+//             title || videoDBExists.title,
+//             duration || videoDBExists.duration,
+//             new Date(Date.now()).toUTCString()
+//         )
 
-        const newVideoDB = {
-            id: editedVideo.getId(),
-            title: editedVideo.getTitle(),
-            duration: editedVideo.getDuration(),
-            upload_date: editedVideo.getUploadDate()
-        }
+//         const newVideoDB = {
+//             id: editedVideo.getId(),
+//             title: editedVideo.getTitle(),
+//             duration: editedVideo.getDuration(),
+//             upload_date: editedVideo.getUploadDate()
+//         }
 
-        await db("videos").update(newVideoDB).where({id: videoId})
-        res.status(200).send("Vídeo editado com sucesso")
+//         await db("videos").update(newVideoDB).where({id: videoId})
+//         res.status(200).send("Vídeo editado com sucesso")
 
-    } catch (error) {
-        console.log(error)
+//     } catch (error) {
+//         console.log(error)
 
-        if (req.statusCode === 200) {
-            res.status(500)
-        }
+//         if (req.statusCode === 200) {
+//             res.status(500)
+//         }
 
-        if (error instanceof Error) {
-            res.send(error.message)
-        } else {
-            res.send("Erro inesperado")
-        }
-    }
-})
+//         if (error instanceof Error) {
+//             res.send(error.message)
+//         } else {
+//             res.send("Erro inesperado")
+//         }
+//     }
+// })
 
-app.delete("/videos/:id", async (req: Request, res: Response) => {
-    try {
-        const videoId = req.params.id
+// app.delete("/videos/:id", async (req: Request, res: Response) => {
+//     try {
+//         const videoId = req.params.id
 
-        const [ videoDBExists ] = await db("videos").where({ id: videoId })
+//         const [ videoDBExists ] = await db("videos").where({ id: videoId })
 
-        if (!videoDBExists) {
-            res.status(400)
-            throw new Error("'id' não encontrada")
-        }
+//         if (!videoDBExists) {
+//             res.status(400)
+//             throw new Error("'id' não encontrada")
+//         }
 
-        await db("videos").del().where({id: videoId})
-        res.status(200).send("Vídeo deletado com sucesso")
+//         await db("videos").del().where({id: videoId})
+//         res.status(200).send("Vídeo deletado com sucesso")
 
-    } catch (error) {
-        console.log(error)
+//     } catch (error) {
+//         console.log(error)
 
-        if (req.statusCode === 200) {
-            res.status(500)
-        }
+//         if (req.statusCode === 200) {
+//             res.status(500)
+//         }
 
-        if (error instanceof Error) {
-            res.send(error.message)
-        } else {
-            res.send("Erro inesperado")
-        }
-    }
-})
+//         if (error instanceof Error) {
+//             res.send(error.message)
+//         } else {
+//             res.send("Erro inesperado")
+//         }
+//     }
+// })
