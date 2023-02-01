@@ -18,4 +18,12 @@ export class VideoDatabase extends BaseDatabase {
     public async insertVideo(newVideo: TVideoDB): Promise <void> {
         await BaseDatabase.connection(VideoDatabase.TABLE_VIDEOS).insert(newVideo)
     }
+
+    public async editVideo(id: string | undefined, newVideoDB: TVideoDB): Promise <void> {
+        await BaseDatabase.connection(VideoDatabase.TABLE_VIDEOS).update(newVideoDB).where({ id })
+    }
+
+    public async deleteVideo(id: string | undefined): Promise <void> {
+        await BaseDatabase.connection(VideoDatabase.TABLE_VIDEOS).del().where({ id })
+    }
 }
